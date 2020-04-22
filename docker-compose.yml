@@ -1,0 +1,161 @@
+version: '3.4'
+services:
+  plex-server:
+    container_name: plex-server
+    image: plexinc/pms-docker:latest
+    restart: unless-stopped
+    environment:
+      - PLEX_UID=${PUID} # default user id, defined in .env 
+      - PLEX_GID=${PGID} # default group id, defined in .env
+      - TZ=${TZ} # timezone, defined in .env
+    network_mode: host
+    volumes:
+      - ${ROOT}/mymedia/config/plex/db:/config # plex database
+      - ${ROOT}/mymedia/config/plex/transcode:/transcode # temp transcoded files
+      - ${ROOT}/hh/datos:/data # media library
+
+  transmission:
+    image: linuxserver/transmission
+    container_name: transmission
+    network_mode: service:vpn # run on the vpn network
+    environment:
+      - PUID=${PUID} # default user id, defined in .env 
+      - PGID=${PGID} # default group id, defined in .env
+      - TZ=${TZ} # timezone, defined in .env
+    volumes:
+      - ${ROOT}/mymedia/downloads:/downloads # downloads folder
+      - ${ROOT}/mymedia/config/transmission:/config # config files
+      - ${ROOT}/mymedia/watch:/watch # config files
+    restart: unless-stopped
+
+  vpn:
+    container_name: vpn
+    image: dperson/openvpn-client:latest
+    cap_add:
+      - net_admin # required to modify network interfaces
+    restart: unless-stopped
+    volumes:
+      - /dev/net:/dev/net:z # tun device
+      - ${ROOT}/mymedia/config/vpn:/vpn # OpenVPN configuration
+    security_opt:
+      - label:disable
+    ports:
+      - 9091:9091 #transmission
+      - 51413:51413
+      - 51413:51413/udp
+    command: '-f "" -r 192.168.1.0/24' # enable firewall and route local network traffic
+
+    #  deluge:
+    #    container_name: deluge
+    #    image: linuxserver/deluge:latest
+    #    restart: unless-stopped
+    #    network_mode: service:vpn # run on the vpn network
+    #    environment:
+    #      - PUID=${PUID} # default user id, defined in .env 
+    #      - PGID=${PGID} # default group id, defined in .env
+    #      - TZ=${TZ} # timezone, defined in .env
+    #      - UMASK_SET=022
+    #    volumes:
+    #      - ${ROOT}/downloads:/downloads # downloads folder
+    #      - ${ROOT}/config/deluge:/config # config files
+
+    #  jackett:
+    #    container_name: jackett
+    #    image: linuxserver/jackett:latest
+    #    restart: unless-stopped
+    #    network_mode: host
+    #    environment:
+    #      - PUID=${PUID} # default user id, defined in .env
+    #      - PGID=${PGID} # default group id, defined in .env
+    #      - TZ=${TZ} # timezone, defined in .env
+    #    volumes:
+    #      - /etc/localtime:/etc/localtime:ro
+    #      - ${ROOT}/downloads/torrent-blackhole:/downloads # place where to put .torrent files for manual download
+    #      - ${ROOT}/config/jackett:/config # config files
+
+    #  nzbget:
+    #    container_name: nzbget
+    #    image: linuxserver/nzbget:latest
+    #    restart: unless-stopped
+    #    network_mode: host
+    #    environment:
+    #      - PUID=${PUID} # default user id, defined in .env
+    #      - PGID=${PGID} # default group id, defined in .env
+    #      - TZ=${TZ} # timezone, defined in .env
+    #    volumes:
+    #      - ${ROOT}/downloads:/downloads # download folder
+    #      - ${ROOT}/config/nzbget:/config # config files
+
+  sonarr:
+    container_name: sonarr
+    image: linuxserver/sonarr:latest
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - PUID=${PUID} # default user id, defined in .env
+      - PGID=${PGID} # default group id, defined in .env
+      - TZ=${TZ} # timezone, defined in .env
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${ROOT}/mymedia/config/sonarr:/config # config files
+      - ${ROOT}/hh/datos/tv:/tv # tv shows folder
+      - ${ROOT}/mymedia/downloads:/downloads # download folder
+
+        #  radarr:
+        #    container_name: radarr
+        #    image: linuxserver/radarr:latest
+        #    restart: unless-stopped
+        #    network_mode: host
+        #    environment:
+        #      - PUID=${PUID} # default user id, defined in .env
+        #      - PGID=${PGID} # default group id, defined in .env
+        #      - TZ=${TZ} # timezone, defined in .env
+        #    volumes:
+        #      - /etc/localtime:/etc/localtime:ro
+        #      - ${ROOT}/config/radarr:/config # config files
+        #      - ${ROOT}/complete/movies:/movies # movies folder
+        #      - ${ROOT}/downloads:/downloads # download folder
+
+
+  unifi-controller:
+    image: linuxserver/unifi-controller
+    container_name: unifi-controller
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - MEM_LIMIT=1024M #optional
+    volumes:
+      - ${ROOT}/mynetwork/config/unifi:/config
+    ports:
+      - 3478:3478/udp
+      - 10001:10001/udp
+      - 8080:8080
+      - 8081:8081
+      - 8443:8443
+      - 8843:8843
+      - 8880:8880
+      - 6789:6789
+    restart: unless-stopped
+
+  portainer:
+    container_name: portainer
+    image: portainer/portainer
+    volumes:
+      - ${ROOT}/myportainer:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
+    ports:
+      - "9000:9000"
+
+  hass:
+    container_name: hass
+    image: homeassistant/home-assistant
+    volumes:
+      - ${ROOT}/myhomeassistant:/config
+      - /etc/letsencrypt:/certs
+    restart: always
+    network_mode: host
+
+volumes:
+  myportainer:
+
