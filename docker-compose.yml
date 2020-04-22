@@ -10,9 +10,9 @@ services:
       - TZ=${TZ} # timezone, defined in .env
     network_mode: host
     volumes:
-      - ${ROOT}/mymedia/config/plex/db:/config # plex database
-      - ${ROOT}/mymedia/config/plex/transcode:/transcode # temp transcoded files
-      - ${ROOT}/hh/datos:/data # media library
+      - ${CONF}/mymedia/config/plex/db:/config # plex database
+      - ${CONF}/mymedia/config/plex/transcode:/transcode # temp transcoded files
+      - ${MEDIA}:/data # media library
 
   transmission:
     image: linuxserver/transmission
@@ -23,9 +23,9 @@ services:
       - PGID=${PGID} # default group id, defined in .env
       - TZ=${TZ} # timezone, defined in .env
     volumes:
-      - ${ROOT}/mymedia/downloads:/downloads # downloads folder
-      - ${ROOT}/mymedia/config/transmission:/config # config files
-      - ${ROOT}/mymedia/watch:/watch # config files
+      - ${MEDIA}/torrent:/downloads # downloads folder
+      - ${CONF}/mymedia/config/transmission:/config # config files
+      - ${MEDIA}/torrent/watch:/watch # config files
     restart: unless-stopped
 
   vpn:
@@ -36,7 +36,7 @@ services:
     restart: unless-stopped
     volumes:
       - /dev/net:/dev/net:z # tun device
-      - ${ROOT}/mymedia/config/vpn:/vpn # OpenVPN configuration
+      - ${CONF}/mymedia/config/vpn:/vpn # OpenVPN configuration
     security_opt:
       - label:disable
     ports:
@@ -97,9 +97,9 @@ services:
       - TZ=${TZ} # timezone, defined in .env
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - ${ROOT}/mymedia/config/sonarr:/config # config files
-      - ${ROOT}/hh/datos/tv:/tv # tv shows folder
-      - ${ROOT}/mymedia/downloads:/downloads # download folder
+      - ${CONF}/mymedia/config/sonarr:/config # config files
+      - ${MEDIA}/TV:/tv # tv shows folder
+      - ${MEDIA}/torrent:/downloads # download folder
 
         #  radarr:
         #    container_name: radarr
@@ -125,7 +125,7 @@ services:
       - PGID=${PGID}
       - MEM_LIMIT=1024M #optional
     volumes:
-      - ${ROOT}/mynetwork/config/unifi:/config
+      - ${CONF}/mynetwork/config/unifi:/config
     ports:
       - 3478:3478/udp
       - 10001:10001/udp
@@ -141,20 +141,20 @@ services:
     container_name: portainer
     image: portainer/portainer
     volumes:
-      - ${ROOT}/myportainer:/data
+      - ${CONF}/myportainer:/data
       - /var/run/docker.sock:/var/run/docker.sock
     restart: always
     ports:
       - "9000:9000"
 
-  hass:
-    container_name: hass
-    image: homeassistant/home-assistant
-    volumes:
-      - ${ROOT}/myhomeassistant:/config
-      - /etc/letsencrypt:/certs
-    restart: always
-    network_mode: host
+        #  hass:
+        #    container_name: hass
+        #    image: homeassistant/home-assistant
+        #    volumes:
+        #      - ${ROOT}/myhomeassistant:/config
+        #      - /etc/letsencrypt:/certs
+        #    restart: always
+        #    network_mode: host
 
 volumes:
   myportainer:
